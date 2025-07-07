@@ -5,8 +5,16 @@
                  http-request-headers
                  http-request-body
                  http-response-write))
+        (only-in :std/format
+                 printf)
+        (only-in :std/config
+                 config-get!))
 
-(export handle-request)
+(export handle-request handler-init!)
+
+(def (handler-init! cfg)
+  (printf "Now listening on ~a...\n"
+          (config-get! cfg listen:)))
 
 (def (make-s3-client)
   (S3Client endpoint: (getenv "S3_ENDPOINT")))
