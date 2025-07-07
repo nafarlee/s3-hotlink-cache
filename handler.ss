@@ -1,10 +1,11 @@
 (import (only-in :std/net/s3
                  S3Client)
         (only-in :std/net/httpd
+                 http-request-client
                  http-request-method
                  http-request-headers
-                 http-request-body
-                 http-response-write))
+                 http-request-path
+                 http-response-write)
         (only-in :std/format
                  printf)
         (only-in :std/config
@@ -19,6 +20,13 @@
 (def (make-s3-client)
   (S3Client endpoint: (getenv "S3_ENDPOINT")))
 
+(def (log-request req)
+  (printf "~a - ~a ~a ~a"
+          (http-request-client req)
+          (http-request-method req)
+          (http-request-path req)
+          (http-request-headers req)))
+
 (def (handle-request req res)
-  (displayln (http-request-method req) " " (http-request-headers req) " " (http-request-body req))
+  (log-request req)
   (http-response-write res 200 [] "Hello, World!"))
