@@ -1,22 +1,16 @@
-#!/usr/bin/env gxi
-(import :std/net/s3)
-(import :std/iter)
+(import (only-in :std/net/s3
+                 S3Client)
+        (only-in :std/net/httpd
+                 http-request-method
+                 http-request-headers
+                 http-request-body
+                 http-response-write))
 
-(def (google)
-  (S3Client endpoint: "storage.googleapis.com"
-            access-key: "GOOG1EW7G7UYJZFJ7APAPNULRKHUHOFQJ3QGRVPUKRAU466LRGVUYCESSNMA5"
-            secret-key: (getenv "GOOGLE_SECRET_KEY")
-            region: "us"))
+(export handle-request)
 
-(def (aws)
-  (S3Client access-key: "AKIA4LRCGLTARCL24T4C"
-            secret-key: (getenv "AWS_SECRET_KEY")))
+(def (make-s3-client)
+  (S3Client endpoint: (getenv "S3_ENDPOINT")))
 
-(def (test client)
-  (using (client : S3)
-    (for (b (client.list-buckets))
-      (displayln b))))
-
-(def (main . args)
-  (test (google))
-  (test (aws)))
+(def (handle-request req res)
+  (displayln (http-request-method req) " " (http-request-headers req) " " (http-request-body req))
+  (http-response-write res 200 [] "Hello, World!"))
