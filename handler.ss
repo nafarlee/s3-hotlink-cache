@@ -16,6 +16,8 @@
 
 (export handle-request handler-init!)
 
+(def bucket #f)
+
 (def (sync-blob bucket origin-url)
   (using (bucket : S3Bucket)
     (unless (bucket.exists? origin-url)
@@ -23,6 +25,7 @@
     (printf "'~a' is ready!\n" origin-url)))
 
 (def (handler-init! cfg)
+  (set! bucket (make-s3-bucket-client))
   (printf "Now listening on ~a...\n"
           (config-get! cfg listen:)))
 
