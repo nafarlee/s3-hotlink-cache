@@ -32,7 +32,7 @@
    (getenv "S3_BUCKET")))
 
 (def (log-request req)
-  (printf "~a - ~a ~a ~a"
+  (printf "~a - ~a ~a ~a\n"
           (http-request-client req)
           (http-request-method req)
           (http-request-path req)
