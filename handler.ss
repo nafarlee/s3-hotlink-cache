@@ -3,6 +3,8 @@
                  S3Bucket
                  S3Bucket-exists?
                  S3Client)
+        (only-in :std/sugar
+                 when-let)
         (only-in :std/net/httpd
                  http-request-client
                  http-request-method
@@ -43,4 +45,6 @@
 
 (def (handle-request req res)
   (log-request req)
+  (when-let (header (assoc "Blob" (http-request-headers req)))
+    (sync-blob bucket (cdr header)))
   (http-response-write res 200 [] "Hello, World!"))
