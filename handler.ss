@@ -1,4 +1,7 @@
 (import (only-in :std/net/s3
+                 S3-get-bucket
+                 S3Bucket
+                 S3Bucket-exists?
                  S3Client)
         (only-in :std/net/httpd
                  http-request-client
@@ -17,8 +20,10 @@
   (printf "Now listening on ~a...\n"
           (config-get! cfg listen:)))
 
-(def (make-s3-client)
-  (S3Client endpoint: (getenv "S3_ENDPOINT")))
+(def (make-s3-bucket-client)
+  (S3-get-bucket
+   (S3Client endpoint: (getenv "S3_ENDPOINT"))
+   (getenv "S3_BUCKET")))
 
 (def (log-request req)
   (printf "~a - ~a ~a ~a"
