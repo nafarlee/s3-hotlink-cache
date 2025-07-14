@@ -16,6 +16,7 @@
                  http-request-params
                  http-response-write)
         (only-in :std/pregexp
+                 pregexp-match
                  pregexp-split)
         (only-in :std/format
                  printf)
@@ -66,6 +67,10 @@
              (url (pget "url" pl))
              (decoded-url (uri-decode url)))
     decoded-url))
+
+(def (url-domain url)
+  (when-let (matches (pregexp-match "^https?://([^:/]+)" url))
+    (second matches)))
 
 (def (handle-request req res)
   (log-request req)
