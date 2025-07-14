@@ -77,6 +77,10 @@
 
 (def (handle-request req res)
   (log-request req)
-  (when-let (header (assoc "Blob" (http-request-headers req)))
-    (sync-blob bucket (cdr header)))
-  (http-response-write res 200 [] "Hello, World!"))
+  (if-not-let (url (origin-url req))
+    (http-response-write res 400 [] "A valid 'url' parameter was not provided")
+    (if-not (allowed-origin? url)
+      (http-response-write res 400 [] "The 'url' parameter does not come from an allowed origin")
+      (begin
+        (sync-blob bucket url)
+        (http-response-write res 200 [] url)))))
