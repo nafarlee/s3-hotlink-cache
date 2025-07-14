@@ -34,17 +34,27 @@
 (def allowed-origin #f)
 (def bucket #f)
 
-(def (sync-blob bucket url)
-  (using (bucket : S3Bucket)
-    (unless (bucket.exists? url)
-      (printf "Downloading '~a'...\n" url))
-    (printf "'~a' is ready!\n" url)))
-
 (def (handler-init! cfg)
   (set! allowed-origin (getenv "ALLOWED_ORIGIN"))
   (set! bucket (make-s3-bucket-client))
   (printf "Now listening on ~a...\n"
           (config-get! cfg listen:)))
+
+(def (handle-request req res)
+  (log-request req)
+  (if-not-let (url (origin-url req))
+    (http-response-write res 400 [] "A valid 'url' parameter was not provided")
+    (if-not (allowed-origin? url)
+      (http-response-write res 400 [] "The 'url' parameter does not come from an allowed origin")
+      (begin
+        (sync-blob bucket url)
+        (http-response-write res 200 [] url)))))
+
+(def (sync-blob bucket url)
+  (using (bucket : S3Bucket)
+    (unless (bucket.exists? url)
+      (printf "Downloading '~a'...\n" url))
+    (printf "'~a' is ready!\n" url)))
 
 (def (make-s3-bucket-client)
   (S3-get-bucket
@@ -74,13 +84,3 @@
 
 (def (allowed-origin? url)
   (equal? allowed-origin (url-domain url)))
-
-(def (handle-request req res)
-  (log-request req)
-  (if-not-let (url (origin-url req))
-    (http-response-write res 400 [] "A valid 'url' parameter was not provided")
-    (if-not (allowed-origin? url)
-      (http-response-write res 400 [] "The 'url' parameter does not come from an allowed origin")
-      (begin
-        (sync-blob bucket url)
-        (http-response-write res 200 [] url)))))
