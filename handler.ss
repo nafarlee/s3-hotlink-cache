@@ -72,6 +72,9 @@
   (when-let (matches (pregexp-match "^https?://([^:/]+)" url))
     (second matches)))
 
+(def (allowed-origin? url)
+  (equal? allowed-origin (url-domain url)))
+
 (def (handle-request req res)
   (log-request req)
   (when-let (header (assoc "Blob" (http-request-headers req)))
