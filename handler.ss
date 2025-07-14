@@ -27,11 +27,11 @@
 
 (def bucket #f)
 
-(def (sync-blob bucket origin-url)
+(def (sync-blob bucket url)
   (using (bucket : S3Bucket)
-    (unless (bucket.exists? origin-url)
-      (printf "Downloading '~a'...\n" origin-url))
-    (printf "'~a' is ready!\n" origin-url)))
+    (unless (bucket.exists? url)
+      (printf "Downloading '~a'...\n" url))
+    (printf "'~a' is ready!\n" url)))
 
 (def (handler-init! cfg)
   (set! bucket (make-s3-bucket-client))
