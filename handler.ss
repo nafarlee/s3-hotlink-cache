@@ -31,11 +31,11 @@
 (defrule (if-not condition fbody tbody)
   (if condition tbody fbody))
 
-(def allowed-origin #f)
+(def allowed-domain #f)
 (def bucket #f)
 
 (def (handler-init! cfg)
-  (set! allowed-origin (getenv "ALLOWED_ORIGIN"))
+  (set! allowed-domain (getenv "ALLOWED_DOMAIN"))
   (set! bucket (make-s3-bucket-client))
   (printf "Now listening on ~a...\n"
           (config-get! cfg listen:)))
@@ -44,8 +44,8 @@
   (log-request req)
   (if-not-let (url (origin-url req))
     (http-response-write res 400 [] "A valid 'url' parameter was not provided")
-    (if-not (allowed-origin? url)
-      (http-response-write res 400 [] "The 'url' parameter does not come from an allowed origin")
+    (if-not (allowed-domain? url)
+      (http-response-write res 400 [] "The 'url' parameter does not come from an allowed domain")
       (begin
         (sync-blob bucket url)
         (http-response-write res 200 [] url)))))
@@ -82,5 +82,5 @@
   (when-let (matches (pregexp-match "^https?://([^:/]+)" url))
     (second matches)))
 
-(def (allowed-origin? url)
-  (equal? allowed-origin (url-domain url)))
+(def (allowed-domain? url)
+  (equal? allowed-domain (url-domain url)))
