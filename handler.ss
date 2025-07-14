@@ -25,6 +25,7 @@
 (defrule (if-not condition fbody tbody)
   (if condition tbody fbody))
 
+(def allowed-origin #f)
 (def bucket #f)
 
 (def (sync-blob bucket url)
@@ -34,6 +35,7 @@
     (printf "'~a' is ready!\n" url)))
 
 (def (handler-init! cfg)
+  (set! allowed-origin (getenv "ALLOWED_ORIGIN"))
   (set! bucket (make-s3-bucket-client))
   (printf "Now listening on ~a...\n"
           (config-get! cfg listen:)))
