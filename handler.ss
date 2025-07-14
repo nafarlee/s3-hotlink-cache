@@ -12,6 +12,8 @@
                  http-request-headers
                  http-request-path
                  http-response-write)
+        (only-in :std/pregexp
+                 pregexp-split)
         (only-in :std/format
                  printf)
         (only-in :std/config
@@ -51,6 +53,9 @@
           (http-request-method req)
           (http-request-path req)
           (http-request-headers req)))
+
+(def (params->plist params)
+  (pregexp-split "[&=]" params))
 
 (def (handle-request req res)
   (log-request req)
