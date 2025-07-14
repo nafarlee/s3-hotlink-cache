@@ -4,6 +4,7 @@
                  S3Bucket-exists?
                  S3Client)
         (only-in :std/sugar
+                 if-let
                  when-let)
         (only-in :std/net/httpd
                  http-request-client
@@ -17,6 +18,9 @@
                  config-get!))
 
 (export handle-request handler-init!)
+
+(defrule (if-not-let bindings fbody tbody)
+  (if-let bindings tbody fbody))
 
 (def bucket #f)
 
