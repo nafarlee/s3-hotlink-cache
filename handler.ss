@@ -22,6 +22,9 @@
 (defrule (if-not-let bindings fbody tbody)
   (if-let bindings tbody fbody))
 
+(defrule (if-not condition fbody tbody)
+  (if condition tbody fbody))
+
 (def bucket #f)
 
 (def (sync-blob bucket origin-url)
