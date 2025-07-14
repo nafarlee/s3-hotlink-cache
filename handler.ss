@@ -3,6 +3,8 @@
                  S3Bucket
                  S3Bucket-exists?
                  S3Client)
+        (only-in :std/net/uri
+                 uri-decode)
         (only-in :std/sugar
                  if-let
                  when-let)
@@ -11,6 +13,7 @@
                  http-request-method
                  http-request-headers
                  http-request-path
+                 http-request-params
                  http-response-write)
         (only-in :std/pregexp
                  pregexp-split)
@@ -56,6 +59,13 @@
 
 (def (params->plist params)
   (pregexp-split "[&=]" params))
+
+(def (origin-url req)
+  (and-let* ((params (http-request-params req))
+             (pl (params->plist params))
+             (url (pget "url" pl))
+             (decoded-url (uri-decode url)))
+    decoded-url))
 
 (def (handle-request req res)
   (log-request req)
