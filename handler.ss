@@ -32,13 +32,16 @@
   (if condition tbody fbody))
 
 (def allowed-domain #f)
+(def s3-endpoint #f)
+(def bucket-name #f)
 (def bucket #f)
 
 (def (handler-init! cfg)
   (set! allowed-domain (getenv "ALLOWED_DOMAIN"))
-  (set! bucket (make-s3-bucket-client))
-  (printf "Now listening on ~a...\n"
-          (config-get! cfg listen:)))
+  (set! s3-endpoint (getenv "S3_ENDPOINT"))
+  (set! bucket-name (getenv "S3_BUCKET"))
+  (set! bucket (S3-get-bucket (S3Client endpoint: s3-endpoint) bucket-name))
+  (printf "Now listening on ~a...\n" (config-get! cfg listen:)))
 
 (def (handle-request req res)
   (log-request req)
@@ -55,11 +58,6 @@
     (unless (bucket.exists? url)
       (printf "Downloading '~a'...\n" url))
     (printf "'~a' is ready!\n" url)))
-
-(def (make-s3-bucket-client)
-  (S3-get-bucket
-   (S3Client endpoint: (getenv "S3_ENDPOINT"))
-   (getenv "S3_BUCKET")))
 
 (def (log-request req)
   (printf "~a - ~a ~a ~a\n"
