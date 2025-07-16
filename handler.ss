@@ -2,8 +2,10 @@
                  S3-get-bucket
                  S3Bucket
                  S3Bucket-exists?
+                 S3Bucket-put!
                  S3Client)
         (only-in :std/net/uri
+                 uri-encode
                  uri-decode)
         (only-in :std/sugar
                  if-let
@@ -19,7 +21,12 @@
                  pregexp-match
                  pregexp-split)
         (only-in :std/format
+                 format
                  printf)
+        (only-in :std/net/request
+                 http-get
+                 request-status
+                 request-content)
         (only-in :std/config
                  config-get!))
 
@@ -54,10 +61,18 @@
         (http-response-write res 200 [] url)))))
 
 (def (sync-blob bucket url)
+  (define encoded-url (uri-encode url))
   (using (bucket : S3Bucket)
-    (unless (bucket.exists? url)
-      (printf "Downloading '~a'...\n" url))
-    (printf "'~a' is ready!\n" url)))
+    (if (bucket.exists? encoded-url)
+      (format "https://~a/~a/~a" s3-endpoint bucket-name encoded-url)
+      (begin
+        (printf "Downloading '~a'...\n" url)
+        (let* ((request (http-get url))
+               (status (request-status request))
+               (blob (request-content request)))
+          (when (<= 200 status 299)
+            (bucket.put! encoded-url blob)
+            (format "https://~a/~a/~a" s3-endpoint bucket-name encoded-url)))))))
 
 (def (log-request req)
   (printf "~a - ~a ~a ~a\n"
