@@ -32,12 +32,6 @@
 
 (export handle-request handler-init!)
 
-(defrule (if-not-let bindings fbody tbody)
-  (if-let bindings tbody fbody))
-
-(defrule (if-not condition fbody tbody)
-  (if condition tbody fbody))
-
 (def allowed-domain #f)
 (def s3-endpoint #f)
 (def bucket-name #f)
@@ -52,13 +46,16 @@
 
 (def (handle-request req res)
   (log-request req)
-  (if-not-let (url (origin-url req))
-    (http-response-write res 400 [] "A valid 'url' parameter was not provided")
-    (if-not (allowed-domain? url)
-      (http-response-write res 400 [] "The 'url' parameter does not come from an allowed domain")
-      (begin
-        (sync-blob bucket url)
-        (http-response-write res 200 [] url)))))
+  (define url (origin-url req))
+  (cond
+    ((not url)
+     (http-response-write res 400 [] "A valid 'url' parameter was not provided"))
+    ((not (allowed-domain? url))
+     (http-response-write res 400 [] "The 'url' parameter does not come from an allowed domain"))
+    (else
+     (if-let (redirect (sync-blob bucket url))
+       (http-response-write res 200 [] redirect)
+       (http-response-write res 400 [] "The blob at 'url' could not be synchronized")))))
 
 (def (sync-blob bucket url)
   (define encoded-url (uri-encode url))
