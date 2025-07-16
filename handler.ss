@@ -52,8 +52,8 @@
     ((not (allowed-domain? url))
      (http-response-write res 400 [] "The 'url' parameter does not come from an allowed domain"))
     (else
-     (if-let (redirect (sync-blob bucket url))
-       (http-response-write res 200 [] redirect)
+     (if-let (location (sync-blob bucket url))
+       (http-response-write res 301 [["Location" . location]] "")
        (http-response-write res 400 [] "The blob at 'url' could not be synchronized")))))
 
 (def (sync-blob bucket url)
