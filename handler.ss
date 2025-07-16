@@ -53,7 +53,7 @@
      (http-response-write res 400 [] "The 'url' parameter does not come from an allowed domain"))
     (else
      (if-let (location (sync-blob bucket url))
-       (http-response-write res 301 [["Location" . location]] "")
+       (http-response-write res 301 [["Location" . location]] #f)
        (http-response-write res 400 [] "The blob at 'url' could not be synchronized")))))
 
 (def (sync-blob bucket url)
