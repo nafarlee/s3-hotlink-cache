@@ -56,10 +56,13 @@
        (http-response-write res 301 [["Location" . location]] #f)
        (http-response-write res 400 [] "The blob at 'url' could not be synchronized")))))
 
+(def (get-cache-address origin-url)
+  (format "https://~a/~a/~a" s3-endpoint bucket-name origin-url))
+
 (def (sync-blob bucket url)
   (using (bucket : S3Bucket)
     (if (bucket.exists? url)
-      (format "https://~a/~a/~a" s3-endpoint bucket-name url)
+      (get-cache-address url)
       (begin
         (printf "Downloading '~a'...\n" url)
         (let* ((request (http-get url))
@@ -67,7 +70,7 @@
                (blob (request-content request)))
           (when (<= 200 status 299)
             (bucket.put! url blob)
-            (format "https://~a/~a/~a" s3-endpoint bucket-name url)))))))
+            (get-cache-address url)))))))
 
 (def (log-request req)
   (printf "~a - ~a ~a ~a\n"
