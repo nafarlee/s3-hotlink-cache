@@ -12,12 +12,10 @@
         (only-in :std/net/uri
                  uri-decode)
         (only-in :std/sugar
-                 if-let
                  when-let)
         (only-in :std/net/httpd
                  http-request-client
                  http-request-method
-                 http-request-headers
                  http-request-path
                  http-request-params
                  http-response-write)
