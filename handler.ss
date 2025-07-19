@@ -71,11 +71,9 @@
       (get-cache-address url)
       (begin
         (eprintf "Downloading '~a'...\n" url)
-        (let* ((request (http-get url))
-               (status (request-status request))
-               (blob (request-content request)))
-          (when (<= 200 status 299)
-            (bucket.put! url blob)
+        (let ((req (http-get url)))
+          (when (<= 200 (request-status req) 299)
+            (bucket.put! url (request-content req))
             (get-cache-address url)))))))
 
 (def (date->cfl-string date)
