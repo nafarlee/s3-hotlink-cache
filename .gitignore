@@ -5,7 +5,7 @@
 *.scm~
 *.scm#*
 .#*.scm
-env.fish
+.env
 
 .gerbil/
 manifest.ss
