@@ -7,6 +7,8 @@
         (only-in :std/srfi/19
                  current-date
                  date->string)
+        (only-in :std/net/address
+                 ip4-address->string)
         (only-in :std/net/uri
                  uri-decode)
         (only-in :std/sugar
@@ -86,11 +88,16 @@
       path)))
 
 (def (log-request req)
-  (printf "~a - ~a ~a ~a\n"
-          (http-request-client req)
+  (printf "~a ~a ~a [~a] \"~a ~a ~a\" ~a ~a\n"
+          (ip4-address->string (car (http-request-client req)))
+          "-"
+          "-"
+          (date->cfl-string (current-date))
           (http-request-method req)
-          (http-request-path req)
-          (http-request-headers req)))
+          (uri-decode (http-request-line req))
+          "HTTP/1.1"
+          "-"
+          "-"))
 
 (def (params->plist params)
   (pregexp-split "[&=]" params))
