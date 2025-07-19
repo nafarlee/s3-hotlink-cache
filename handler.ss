@@ -26,7 +26,8 @@
                  pregexp-split)
         (only-in :std/format
                  format
-                 printf)
+                 printf
+                 eprintf)
         (only-in :std/net/request
                  http-get
                  request-status
@@ -46,7 +47,7 @@
   (set! s3-endpoint (getenv "S3_ENDPOINT"))
   (set! bucket-name (getenv "S3_BUCKET"))
   (set! bucket (S3-get-bucket (S3Client endpoint: s3-endpoint) bucket-name))
-  (printf "Now listening on ~a...\n" (config-get! cfg listen:)))
+  (eprintf "Now listening on ~a...\n" (config-get! cfg listen:)))
 
 (def (handle-request req res)
   (log-request req)
@@ -69,7 +70,7 @@
     (if (bucket.exists? url)
       (get-cache-address url)
       (begin
-        (printf "Downloading '~a'...\n" url)
+        (eprintf "Downloading '~a'...\n" url)
         (let* ((request (http-get url))
                (status (request-status request))
                (blob (request-content request)))
