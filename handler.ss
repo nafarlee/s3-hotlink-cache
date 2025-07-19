@@ -4,6 +4,9 @@
                  S3Bucket-exists?
                  S3Bucket-put!
                  S3Client)
+        (only-in :std/srfi/19
+                 current-date
+                 date->string)
         (only-in :std/net/uri
                  uri-decode)
         (only-in :std/sugar
@@ -71,6 +74,9 @@
           (when (<= 200 status 299)
             (bucket.put! url blob)
             (get-cache-address url)))))))
+
+(def (date->cfl-string date)
+  (date->string (current-date) "~d/~b/~Y:~H:~M:~S ~z"))
 
 (def (log-request req)
   (printf "~a - ~a ~a ~a\n"
