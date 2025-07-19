@@ -1,4 +1,10 @@
-on: push
+on:
+  push:
+    paths:
+      - Dockerfile
+      - handler.ss
+      - build.ss
+      - gerbil.pkg
 
 jobs:
   main:
