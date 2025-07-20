@@ -56,7 +56,12 @@
     ((not (allowed-domain? url))
      (http-response-write res 400 [] "The 'url' parameter does not come from an allowed domain"))
     ((sync-blob bucket url)
-     => (lambda (location) (http-response-write res 301 [["Location" . location]] #f)))
+     => (lambda (location)
+          (http-response-write res
+                               301
+                               [["Location" . location]
+                                `("Cache-Control" . ,(format "public, max-age=~d" (* 60 60 24 7)))]
+                               #f)))
     (else
      (http-response-write res 400 [] "The blob at 'url' could not be synchronized"))))
 
