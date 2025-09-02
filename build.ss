@@ -2,4 +2,4 @@
 (import :std/build-script)
 
 (defbuild-script
-  '("handler"))
+  '((exe: "main")))
