@@ -12,8 +12,11 @@
         (only-in :std/net/uri
                  uri-decode)
         (only-in :std/sugar
+                 hash
                  when-let)
         (only-in :std/net/httpd
+                 start-http-server!
+                 make-static-http-mux
                  http-request-client
                  http-request-method
                  http-request-path
@@ -29,23 +32,31 @@
         (only-in :std/net/request
                  http-get
                  request-status
-                 request-content)
-        (only-in :std/config
-                 config-get!))
+                 request-content))
 
-(export handle-request handler-init!)
+(export main)
 
 (def allowed-domain #f)
 (def s3-endpoint #f)
 (def bucket-name #f)
 (def bucket #f)
 
-(def (handler-init! cfg)
+(def (main)
+  (handler-init!)
+  (let* ((address
+          "0.0.0.0:8080")
+         (mux
+          (make-static-http-mux (hash ("/" handle-request))))
+         (httpd
+          (start-http-server! address mux: mux)))
+    (eprintf "Now listening on ~a...\n" address)
+    (thread-join! httpd)))
+
+(def (handler-init!)
   (set! allowed-domain (getenv "ALLOWED_DOMAIN"))
   (set! s3-endpoint (getenv "S3_ENDPOINT"))
   (set! bucket-name (getenv "S3_BUCKET"))
-  (set! bucket (S3-get-bucket (S3Client endpoint: s3-endpoint) bucket-name))
-  (eprintf "Now listening on ~a...\n" (config-get! cfg listen:)))
+  (set! bucket (S3-get-bucket (S3Client endpoint: s3-endpoint) bucket-name)))
 
 (def (handle-request req res)
   (log-request req)
