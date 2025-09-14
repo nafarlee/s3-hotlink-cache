@@ -4,6 +4,19 @@
                  S3Bucket-exists?
                  S3Bucket-put!
                  S3Client)
+        (only-in :std/cli/getopt
+                 call-with-getopt
+                 option)
+        (only-in :std/srfi/128
+                 make-default-comparator)
+        (only-in :std/srfi/113
+                 set-empty?
+                 set
+                 list->set
+                 set->list
+                 set-difference)
+        (only-in :std/misc/hash
+                 hash-filter)
         (only-in :std/srfi/19
                  current-date
                  date->string)
@@ -41,7 +54,43 @@
 (def bucket-name #f)
 (def bucket #f)
 
-(def (main)
+(def (main . args)
+  (call-with-getopt run args
+     program: "s3-hotlink-cache"
+     help: "S3 Hotlink Cache"
+     (option 'allowed-domains "-d" "--allowed-domains"
+       help: "The only domain from which the service will accept asset URLs"
+       value: (cut string-split <> #\,))
+     (option 's3-endpoint "-e" "--s3-endpoint"
+       help: "The endpoint of your S3-compatible object storage (without the protocol)")
+     (option 's3-bucket "-b" "--s3-bucket"
+       help: "The name of the S3 bucket where assets will be stored")
+     (option 'access-key "-a" "--access-key"
+       help: "Your S3 access key ID")
+     (option 'secret-key-env "-s" "--secret-key-env"
+       help: "The environment variable that stores your S3 secret access key")
+     (option 's3-bucket-region "-r" "--s3-bucket-region"
+       help: "The region in which the bucket resides")))
+
+(def (assert-required-options opt)
+  (define cmp
+    (make-default-comparator))
+  (define REQUIRED_OPTIONS
+    (set cmp 'allowed-domains
+             's3-endpoint
+             's3-bucket
+             'access-key
+             'secret-key-env
+             's3-bucket-region))
+  (define present-options
+    (list->set cmp (hash-keys (hash-filter opt (lambda (_ v) v)))))
+  (define missing-options
+    (set-difference REQUIRED_OPTIONS present-options))
+  (unless (set-empty? missing-options)
+    (error "Missing required command-line options" (set->list missing-options))))
+
+(def (run opt)
+  (assert-required-options opt)
   (handler-init!)
   (let* ((address
           "0.0.0.0:8080")
