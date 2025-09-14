@@ -68,7 +68,8 @@
      (option 'access-key "-a" "--access-key"
        help: "Your S3 access key ID")
      (option 'secret-key-env "-s" "--secret-key-env"
-       help: "The environment variable that stores your S3 secret access key")
+       help: "The environment variable that stores your S3 secret access key"
+       value: (cut getenv <>))
      (option 's3-bucket-region "-r" "--s3-bucket-region"
        help: "The region in which the bucket resides")))
 
