@@ -30,15 +30,20 @@ $ curl -L localhost:8080 --get --data-urlencode "url=https://example.com/hello-w
 Hello, World!
 ```
 
-## Configuration
+## Reference
 
-The proxy is configured entirely through environment variables.
+```sh
+s3-hotlink-cache: S3 Hotlink Cache
 
-| Variable                | Required? | Description                                                              | Example                                                         |
-| ---                     | ---       | ---                                                                      | ---                                                             |
-| `ALLOWED_DOMAIN`        | Yes       | The only domain from which the service will accept asset URLs            | `example.com`                                                   |
-| `S3_ENDPOINT`           | Yes       | The endpoint of your S3-compatible object storage, without the protocol  | `storage.googleapis.com`                                        |
-| `S3_BUCKET`             | Yes       | The name of the S3 bucket where assets will be stored                    | `my-bucket`                                                     |
-| `AWS_ACCESS_KEY_ID`     | Yes       | Your S3 access key ID                                                    | `XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX` |
-| `AWS_SECRET_ACCESS_KEY` | Yes       | Your S3 secret access key                                                | `YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY`                      |
-| `AWS_DEFAULT_REGION`    | Yes       | The region in which the bucket resides                                   | `us`                                                            |
+Usage: s3-hotlink-cache [option ...]
+
+Options:
+ -p --port <port>                         The port on which the service will listen [default: 8080]
+ -d --allowed-domains <allowed-domains>   The only domain from which the service will accept asset URLs [default: #f]
+ -e --s3-endpoint <s3-endpoint>           The endpoint of your S3-compatible object storage (without the protocol) [default: #f]
+ -b --s3-bucket <s3-bucket>               The name of the S3 bucket where assets will be stored [default: #f]
+ -a --access-key <access-key>             Your S3 access key ID [default: #f]
+ -s --secret-key-env <secret-key-env>     The environment variable that stores your S3 secret access key [default: #f]
+ -r --s3-bucket-region <s3-bucket-region> The region in which the bucket resides [default: #f]
+ -h --help                                display help
+```
