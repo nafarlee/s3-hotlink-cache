@@ -25,6 +25,7 @@
         (only-in :std/net/uri
                  uri-decode)
         (only-in :std/sugar
+                 let-hash
                  hash
                  when-let)
         (only-in :std/net/httpd
@@ -48,11 +49,6 @@
                  request-content))
 
 (export main)
-
-(def allowed-domain #f)
-(def s3-endpoint #f)
-(def bucket-name #f)
-(def bucket #f)
 
 (def (main . args)
   (call-with-getopt run args
@@ -92,31 +88,42 @@
 
 (def (run opt)
   (assert-required-options opt)
-  (handler-init!)
-  (let* ((address
+  (let* ((ctx
+          (init opt))
+         (address
           "0.0.0.0:8080")
          (mux
-          (make-static-http-mux (hash ("/" handle-request))))
+          (make-static-http-mux (hash ("/" (cut handle-request ctx <> <>)))))
          (httpd
           (start-http-server! address mux: mux)))
+    (pp (hash->plist ctx))
     (eprintf "Now listening on ~a...\n" address)
     (thread-join! httpd)))
 
-(def (handler-init!)
-  (set! allowed-domain (getenv "ALLOWED_DOMAIN"))
-  (set! s3-endpoint (getenv "S3_ENDPOINT"))
-  (set! bucket-name (getenv "S3_BUCKET"))
-  (set! bucket (S3-get-bucket (S3Client endpoint: s3-endpoint) bucket-name)))
+(def (hash-put ht k v)
+  (define ht-copy (hash-copy ht))
+  (hash-put! ht-copy k v)
+  ht-copy)
 
-(def (handle-request req res)
+(def (init opt)
+  (hash-put opt
+            'bucket
+            (let-hash opt
+              (let ((client (S3Client endpoint:   .s3-endpoint
+                                      access-key: .access-key
+                                      secret-key: .secret-key-env
+                                      region:     .s3-bucket-region)))
+                (S3-get-bucket client .s3-bucket)))))
+
+(def (handle-request ctx req res)
   (log-request req)
   (define url (origin-url req))
   (cond
     ((not url)
      (http-response-write res 400 [] "A valid 'url' parameter was not provided"))
-    ((not (allowed-domain? url))
+    ((not (allowed-domain? ctx url))
      (http-response-write res 400 [] "The 'url' parameter does not come from an allowed domain"))
-    ((sync-blob bucket url)
+    ((sync-blob ctx url)
      => (lambda (location)
           (http-response-write res
                                301
@@ -126,13 +133,15 @@
     (else
      (http-response-write res 400 [] "The blob at 'url' could not be synchronized"))))
 
-(def (get-cache-address origin-url)
-  (format "https://~a/~a/~a" s3-endpoint bucket-name origin-url))
+(def (get-cache-address ctx origin-url)
+  (let-hash ctx
+    (format "https://~a/~a/~a" .s3-endpoint .s3-bucket origin-url)))
 
-(def (sync-blob bucket url)
+(def (sync-blob ctx (url : :string))
+  (define bucket (hash-ref ctx 'bucket))
   (using (bucket : S3Bucket)
     (if (bucket.exists? url)
-      (get-cache-address url)
+      (get-cache-address ctx url)
       (begin
         (eprintf "Downloading '~a'...\n" url)
         (let ((req (http-get url)))
@@ -176,5 +185,6 @@
   (when-let (matches (pregexp-match "^https?://([^:/]+)" url))
     (second matches)))
 
-(def (allowed-domain? url)
-  (equal? allowed-domain (url-domain url)))
+(def (allowed-domain? ctx url)
+  (member (url-domain url)
+          (hash-ref ctx 'allowed-domains)))
