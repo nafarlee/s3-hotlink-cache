@@ -54,6 +54,9 @@
   (call-with-getopt run args
      program: "s3-hotlink-cache"
      help: "S3 Hotlink Cache"
+     (option 'port "-p" "--port"
+       help: "The port on which the service will listen"
+       default: "8080")
      (option 'allowed-domains "-d" "--allowed-domains"
        help: "The only domain from which the service will accept asset URLs"
        value: (cut string-split <> #\,))
@@ -91,7 +94,7 @@
   (let* ((ctx
           (init opt))
          (address
-          "0.0.0.0:8080")
+          (string-append "0.0.0.0:" (hash-ref ctx 'port)))
          (mux
           (make-static-http-mux (hash ("/" (cut handle-request ctx <> <>)))))
          (httpd
