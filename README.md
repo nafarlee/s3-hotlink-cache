@@ -9,7 +9,16 @@ redirect
 ```sh
 # Server Terminal
 
-$ docker run -itp=8080:8080 --env-file=.env "ghcr.io/nafarlee/s3-hotlink-cache:$TAG"
+$ docker run \
+    -itp=8080:8080 \
+    --env-file=.env \
+    "ghcr.io/nafarlee/s3-hotlink-cache:$TAG" \
+    --allowed-domains 'example.com' \
+    --s3-bucket 'my-bucket' \
+    --s3-endpoint 'storage.googleapis.com' \
+    --access-key 'MYACCESSKEY' \
+    --s3-bucket-region 'us' \
+    --secret-key-env 'S3_KEY'
 Now listening on (0.0.0.0:8080)...
 ```
 
