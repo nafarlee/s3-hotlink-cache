@@ -150,7 +150,7 @@
         (let ((req (http-get url)))
           (when (<= 200 (request-status req) 299)
             (bucket.put! url (request-content req))
-            (get-cache-address url)))))))
+            (get-cache-address ctx url)))))))
 
 (def (date->cfl-string date)
   (date->string (current-date) "~d/~b/~Y:~H:~M:~S ~z"))
