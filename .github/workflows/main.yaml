@@ -2,7 +2,7 @@ on:
   push:
     paths:
       - Dockerfile
-      - handler.ss
+      - main.ss
       - build.ss
       - gerbil.pkg
 
