@@ -108,7 +108,8 @@
     (eprintf "Now listening on ~a...\n" address)
     (thread-join! httpd)))
 
-(defstruct HitCache (ht))
+(defstruct HitCache (ht)
+  constructor: :init!)
 
 (defmethod {:init! HitCache}
   (lambda (self (ht (hash)))
