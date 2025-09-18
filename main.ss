@@ -99,7 +99,6 @@
           (make-static-http-mux (hash ("/" (cut handle-request ctx <> <>)))))
          (httpd
           (start-http-server! address mux: mux)))
-    (pp (hash->plist ctx))
     (eprintf "Now listening on ~a...\n" address)
     (thread-join! httpd)))
 
