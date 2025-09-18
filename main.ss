@@ -18,7 +18,12 @@
         (only-in :std/misc/hash
                  hash-filter)
         (only-in :std/srfi/19
+                 add-duration
+                 make-time
+                 time<?
+                 time-duration
                  current-date
+                 current-time
                  date->string)
         (only-in :std/net/address
                  ip4-address->string)
@@ -27,6 +32,7 @@
         (only-in :std/sugar
                  let-hash
                  hash
+                 awhen
                  when-let)
         (only-in :std/net/httpd
                  start-http-server!
@@ -102,6 +108,27 @@
     (eprintf "Now listening on ~a...\n" address)
     (thread-join! httpd)))
 
+(defstruct HitCache (ht))
+
+(defmethod {:init! HitCache}
+  (lambda (self (ht (hash)))
+    (using (self :- HitCache)
+      (set! self.ht ht))))
+
+(defmethod {hit! HitCache}
+  (lambda (self k)
+    (using (self :- HitCache)
+      (hash-put! self.ht k (current-time)))))
+
+(defmethod {has? HitCache}
+  (lambda (self k)
+    (using (self :- HitCache)
+      (awhen (time (hash-get self.ht k))
+        (time<? (current-time)
+                (add-duration time
+                              (make-time time-duration
+                                         0
+                                         300)))))))
 
 (def (init opt)
   (hash-merge
