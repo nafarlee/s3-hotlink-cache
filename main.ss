@@ -21,6 +21,7 @@
                  hash-filter)
         (only-in :std/srfi/19
                  current-date
+                 date?
                  date->string)
         (only-in :std/net/address
                  ip4-address->string)
@@ -33,6 +34,8 @@
         (only-in :std/net/httpd
                  start-http-server!
                  make-static-http-mux
+                 http-request
+                 http-response?
                  http-request-client
                  http-request-method
                  http-request-path
@@ -74,7 +77,7 @@
      (option 's3-bucket-region "-r" "--s3-bucket-region"
        help: "The region in which the bucket resides")))
 
-(def (assert-required-options opt)
+(def (assert-required-options (opt :~ hash-table?))
   (define cmp
     (make-comparator symbol? symbol=? #f symbol-hash))
   (define REQUIRED_OPTIONS
@@ -91,7 +94,7 @@
   (unless (set-empty? missing-options)
     (error "Missing required command-line options" (set->list missing-options))))
 
-(def (run opt)
+(def (run (opt :~ hash-table?))
   (assert-required-options opt)
   (let* ((ctx
           (init opt))
@@ -104,7 +107,7 @@
     (eprintf "Now listening on ~a...\n" address)
     (thread-join! httpd)))
 
-(def (init opt)
+(def (init (opt :~ hash-table?))
   (hash-merge
     (hash (bucket
            (let-hash opt
@@ -117,7 +120,7 @@
            (set (make-comparator string? string=? #f string-hash))))
     opt))
 
-(def (handle-request ctx req res)
+(def (handle-request (ctx :~ hash-table?) (req : http-request) (res :~ http-response?))
   (log-request req)
   (define url (origin-url req))
   (cond
@@ -132,11 +135,11 @@
     (else
      (http-response-write res 400 [] "The blob at 'url' could not be synchronized"))))
 
-(def (get-cache-address ctx origin-url)
+(def (get-cache-address (ctx :~ hash-table?) (origin-url : :string))
   (let-hash ctx
     (format "https://~a/~a/~a" .s3-endpoint .s3-bucket origin-url)))
 
-(def (redirect res location)
+(def (redirect (res :~ http-response?) (location : :string))
   (http-response-write
    res
    301
@@ -144,7 +147,7 @@
     `("Cache-Control" . ,(format "public, max-age=~d" (* 60 60 24 7)))]
    #f))
 
-(def (sync-blob ctx (url : :string))
+(def (sync-blob (ctx :~ hash-table?) (url : :string))
   (define bucket (hash-ref ctx 'bucket))
   (using (bucket : S3Bucket)
     (if (bucket.exists? url)
@@ -159,17 +162,17 @@
             (set-adjoin! (hash-ref ctx 'hit-cache) url)
             (get-cache-address ctx url)))))))
 
-(def (date->cfl-string date)
+(def (date->cfl-string (date :~ date?))
   (date->string (current-date) "~d/~b/~Y:~H:~M:~S ~z"))
 
-(def (http-request-line req)
+(def (http-request-line (req : http-request))
   (let ((path (http-request-path req))
         (params (http-request-params req)))
     (if params
       (format "~a?~a" path params)
       path)))
 
-(def (log-request req)
+(def (log-request (req : http-request))
   (printf "~a ~a ~a [~a] \"~a ~a ~a\" ~a ~a\n"
           (ip4-address->string (car (http-request-client req)))
           "-"
@@ -181,20 +184,20 @@
           "-"
           "-"))
 
-(def (params->plist params)
+(def (params->plist (params : :string))
   (pregexp-split "[&=]" params))
 
-(def (origin-url req)
+(def (origin-url (req : http-request))
   (and-let* ((params (http-request-params req))
              (pl (params->plist params))
              (url (pget "url" pl))
              (decoded-url (uri-decode url)))
     decoded-url))
 
-(def (url-domain url)
+(def (url-domain (url : :string))
   (when-let (matches (pregexp-match "^https?://([^:/]+)" url))
     (second matches)))
 
-(def (allowed-domain? ctx url)
+(def (allowed-domain? (ctx :~ hash-table?) (url : :string))
   (member (url-domain url)
           (hash-ref ctx 'allowed-domains)))
