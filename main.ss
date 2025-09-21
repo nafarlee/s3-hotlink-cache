@@ -8,7 +8,7 @@
                  call-with-getopt
                  option)
         (only-in :std/srfi/128
-                 make-default-comparator)
+                 make-comparator)
         (only-in :std/srfi/113
                  set-empty?
                  set
@@ -74,7 +74,7 @@
 
 (def (assert-required-options opt)
   (define cmp
-    (make-default-comparator))
+    (make-comparator symbol? symbol=? #f symbol-hash))
   (define REQUIRED_OPTIONS
     (set cmp 'allowed-domains
              's3-endpoint
