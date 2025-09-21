@@ -11,6 +11,7 @@
                  make-comparator)
         (only-in :std/srfi/113
                  set-empty?
+                 set-contains?
                  set-adjoin!
                  set
                  list->set
@@ -124,6 +125,8 @@
      (http-response-write res 400 [] "A valid 'url' parameter was not provided"))
     ((not (allowed-domain? ctx url))
      (http-response-write res 400 [] "The 'url' parameter does not come from an allowed domain"))
+    ((set-contains? (hash-ref ctx 'hit-cache) url)
+     (redirect res (get-cache-address ctx url)))
     ((sync-blob ctx url)
      => (cut redirect res <>))
     (else
