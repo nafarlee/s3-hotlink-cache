@@ -123,18 +123,21 @@
     ((not (allowed-domain? ctx url))
      (http-response-write res 400 [] "The 'url' parameter does not come from an allowed domain"))
     ((sync-blob ctx url)
-     => (lambda (location)
-          (http-response-write res
-                               301
-                               [["Location" . location]
-                                `("Cache-Control" . ,(format "public, max-age=~d" (* 60 60 24 7)))]
-                               #f)))
+     => (cut redirect res <>))
     (else
      (http-response-write res 400 [] "The blob at 'url' could not be synchronized"))))
 
 (def (get-cache-address ctx origin-url)
   (let-hash ctx
     (format "https://~a/~a/~a" .s3-endpoint .s3-bucket origin-url)))
+
+(def (redirect res location)
+  (http-response-write
+   res
+   301
+   [["Location"       . location]
+    `("Cache-Control" . ,(format "public, max-age=~d" (* 60 60 24 7)))]
+   #f))
 
 (def (sync-blob ctx (url : :string))
   (define bucket (hash-ref ctx 'bucket))
