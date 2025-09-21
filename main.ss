@@ -11,6 +11,7 @@
                  make-comparator)
         (only-in :std/srfi/113
                  set-empty?
+                 set-adjoin!
                  set
                  list->set
                  set->list
@@ -144,12 +145,15 @@
   (define bucket (hash-ref ctx 'bucket))
   (using (bucket : S3Bucket)
     (if (bucket.exists? url)
-      (get-cache-address ctx url)
+      (begin
+        (set-adjoin! (hash-ref ctx 'hit-cache) url)
+        (get-cache-address ctx url))
       (begin
         (eprintf "Downloading '~a'...\n" url)
         (let ((req (http-get url)))
           (when (<= 200 (request-status req) 299)
             (bucket.put! url (request-content req))
+            (set-adjoin! (hash-ref ctx 'hit-cache) url)
             (get-cache-address ctx url)))))))
 
 (def (date->cfl-string date)
