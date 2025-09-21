@@ -103,20 +103,16 @@
     (eprintf "Now listening on ~a...\n" address)
     (thread-join! httpd)))
 
-(def (hash-put ht k v)
-  (define ht-copy (hash-copy ht))
-  (hash-put! ht-copy k v)
-  ht-copy)
-
 (def (init opt)
-  (hash-put opt
-            'bucket
-            (let-hash opt
-              (let ((client (S3Client endpoint:   .s3-endpoint
-                                      access-key: .access-key
-                                      secret-key: .secret-key-env
-                                      region:     .s3-bucket-region)))
-                (S3-get-bucket client .s3-bucket)))))
+  (hash-merge
+    (hash ('bucket
+           (let-hash opt
+             (S3-get-bucket (S3Client endpoint:    .s3-endpoint
+                                       access-key: .access-key
+                                       secret-key: .secret-key-env
+                                       region:     .s3-bucket-region)
+                            .s3-bucket))))
+    opt))
 
 (def (handle-request ctx req res)
   (log-request req)
