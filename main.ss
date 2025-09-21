@@ -8,9 +8,11 @@
                  call-with-getopt
                  option)
         (only-in :std/srfi/128
-                 make-default-comparator)
+                 make-comparator)
         (only-in :std/srfi/113
                  set-empty?
+                 set-contains?
+                 set-adjoin!
                  set
                  list->set
                  set->list
@@ -74,7 +76,7 @@
 
 (def (assert-required-options opt)
   (define cmp
-    (make-default-comparator))
+    (make-comparator symbol? symbol=? #f symbol-hash))
   (define REQUIRED_OPTIONS
     (set cmp 'allowed-domains
              's3-endpoint
@@ -99,24 +101,21 @@
           (make-static-http-mux (hash ("/" (cut handle-request ctx <> <>)))))
          (httpd
           (start-http-server! address mux: mux)))
-    (pp (hash->plist ctx))
     (eprintf "Now listening on ~a...\n" address)
     (thread-join! httpd)))
 
-(def (hash-put ht k v)
-  (define ht-copy (hash-copy ht))
-  (hash-put! ht-copy k v)
-  ht-copy)
-
 (def (init opt)
-  (hash-put opt
-            'bucket
-            (let-hash opt
-              (let ((client (S3Client endpoint:   .s3-endpoint
-                                      access-key: .access-key
-                                      secret-key: .secret-key-env
-                                      region:     .s3-bucket-region)))
-                (S3-get-bucket client .s3-bucket)))))
+  (hash-merge
+    (hash (bucket
+           (let-hash opt
+             (S3-get-bucket (S3Client endpoint:    .s3-endpoint
+                                       access-key: .access-key
+                                       secret-key: .secret-key-env
+                                       region:     .s3-bucket-region)
+                            .s3-bucket)))
+          (hit-cache
+           (set (make-comparator string? string=? #f string-hash))))
+    opt))
 
 (def (handle-request ctx req res)
   (log-request req)
@@ -126,13 +125,10 @@
      (http-response-write res 400 [] "A valid 'url' parameter was not provided"))
     ((not (allowed-domain? ctx url))
      (http-response-write res 400 [] "The 'url' parameter does not come from an allowed domain"))
+    ((set-contains? (hash-ref ctx 'hit-cache) url)
+     (redirect res (get-cache-address ctx url)))
     ((sync-blob ctx url)
-     => (lambda (location)
-          (http-response-write res
-                               301
-                               [["Location" . location]
-                                `("Cache-Control" . ,(format "public, max-age=~d" (* 60 60 24 7)))]
-                               #f)))
+     => (cut redirect res <>))
     (else
      (http-response-write res 400 [] "The blob at 'url' could not be synchronized"))))
 
@@ -140,16 +136,27 @@
   (let-hash ctx
     (format "https://~a/~a/~a" .s3-endpoint .s3-bucket origin-url)))
 
+(def (redirect res location)
+  (http-response-write
+   res
+   301
+   [["Location"       . location]
+    `("Cache-Control" . ,(format "public, max-age=~d" (* 60 60 24 7)))]
+   #f))
+
 (def (sync-blob ctx (url : :string))
   (define bucket (hash-ref ctx 'bucket))
   (using (bucket : S3Bucket)
     (if (bucket.exists? url)
-      (get-cache-address ctx url)
+      (begin
+        (set-adjoin! (hash-ref ctx 'hit-cache) url)
+        (get-cache-address ctx url))
       (begin
         (eprintf "Downloading '~a'...\n" url)
         (let ((req (http-get url)))
           (when (<= 200 (request-status req) 299)
             (bucket.put! url (request-content req))
+            (set-adjoin! (hash-ref ctx 'hit-cache) url)
             (get-cache-address ctx url)))))))
 
 (def (date->cfl-string date)
