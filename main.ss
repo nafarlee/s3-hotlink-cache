@@ -51,6 +51,8 @@
                  format
                  printf
                  eprintf)
+        (only-in :std/text/json
+                 write-json)
         (only-in :std/net/request
                  http-get
                  request-status
@@ -180,16 +182,13 @@
       path)))
 
 (def (log-request (req : http-request))
-  (printf "~a ~a ~a [~a] \"~a ~a ~a\" ~a ~a\n"
-          (ip4-address->string (car (http-request-client req)))
-          "-"
-          "-"
-          (date->cfl-string (current-date))
-          (http-request-method req)
-          (uri-decode (http-request-line req))
-          "HTTP/1.1"
-          "-"
-          "-"))
+  (write-json
+   (hash (ip        (ip4-address->string (car (http-request-client req))))
+         (timestamp (date->cfl-string (current-date)))
+         (method    (http-request-method req))
+         (url       (uri-decode (http-request-line req)))
+         (protocol  "HTTP/1.1")))
+  (newline))
 
 (def (params->plist (params : :string))
   (pregexp-split "[&=]" params))
