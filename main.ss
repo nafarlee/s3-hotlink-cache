@@ -117,9 +117,9 @@
     (hash (bucket
            (let-hash opt
              (S3-get-bucket (S3Client endpoint:    .s3-endpoint
-                                       access-key: .access-key
-                                       secret-key: .secret-key-env
-                                       region:     .s3-bucket-region)
+                                      access-key: .access-key
+                                      secret-key: .secret-key-env
+                                      region:     .s3-bucket-region)
                             .s3-bucket)))
           (hit-cache
            (set (make-comparator string? string=? #f string-hash))))
