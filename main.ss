@@ -126,10 +126,11 @@
     opt))
 
 (defrule (with-request-log req body ...)
-  (try
-    body
-    ...
-    (finally (log-request req))))
+  (let ($now (current-date))
+    (try
+      body
+      ...
+      (finally (log-request req $now)))))
 
 (def (handle-request (ctx :~ hash-table?) (req : http-request) (res :~ http-response?))
   (with-request-log req
@@ -181,10 +182,10 @@
       (format "~a?~a" path params)
       path)))
 
-(def (log-request (req : http-request))
+(def (log-request (req : http-request) (date :~ date?))
   (write-json
    (hash (ip        (ip4-address->string (car (http-request-client req))))
-         (timestamp (date->cfl-string (current-date)))
+         (timestamp (date->cfl-string date))
          (method    (http-request-method req))
          (url       (uri-decode (http-request-line req)))
          (protocol  "HTTP/1.1")))
