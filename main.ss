@@ -187,7 +187,8 @@
    (hash (ip        (ip4-address->string (car (http-request-client req))))
          (timestamp (date->cfl-string date))
          (method    (http-request-method req))
-         (url       (uri-decode (http-request-line req)))
+         (params    (uri-decode (http-request-params req)))
+         (path      (uri-decode (http-request-path req)))
          (protocol  "HTTP/1.1")))
   (newline))
 
