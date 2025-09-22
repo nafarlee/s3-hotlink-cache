@@ -175,13 +175,6 @@
 (def (date->cfl-string (date :~ date?))
   (date->string (current-date) "~d/~b/~Y:~H:~M:~S ~z"))
 
-(def (http-request-line (req : http-request))
-  (let ((path (http-request-path req))
-        (params (http-request-params req)))
-    (if params
-      (format "~a?~a" path params)
-      path)))
-
 (def (log-request (req : http-request) (date :~ date?))
   (write-json
    (hash (ip        (ip4-address->string (car (http-request-client req))))
