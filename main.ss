@@ -30,6 +30,7 @@
         (only-in :std/sugar
                  try
                  catch
+                 finally
                  let-hash
                  hash
                  when-let)
@@ -121,6 +122,12 @@
           (hit-cache
            (set (make-comparator string? string=? #f string-hash))))
     opt))
+
+(defrule (with-request-log req body ...)
+  (try
+    body
+    ...
+    (finally (log-request req))))
 
 (def (handle-request (ctx :~ hash-table?) (req : http-request) (res :~ http-response?))
   (log-request req)
