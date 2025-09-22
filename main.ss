@@ -28,6 +28,8 @@
         (only-in :std/net/uri
                  uri-decode)
         (only-in :std/sugar
+                 try
+                 catch
                  let-hash
                  hash
                  when-let)
@@ -130,10 +132,11 @@
      (http-response-write res 400 [] "The 'url' parameter does not come from an allowed domain"))
     ((set-contains? (hash-ref ctx 'hit-cache) url)
      (redirect res (get-cache-address ctx url)))
-    ((sync-blob ctx url)
-     => (cut redirect res <>))
     (else
-     (http-response-write res 400 [] "The blob at 'url' could not be synchronized"))))
+     (try
+       (sync-blob! ctx url)
+       (redirect res (get-cache-address ctx url))
+       (catch _ (http-response-write res 400 [] "The blob at 'url' could not be synchronized"))))))
 
 (def (get-cache-address (ctx :~ hash-table?) (origin-url : :string))
   (let-hash ctx
@@ -147,20 +150,17 @@
     `("Cache-Control" . ,(format "public, max-age=~d" (* 60 60 24 7)))]
    #f))
 
-(def (sync-blob (ctx :~ hash-table?) (url : :string))
+(def (sync-blob! (ctx :~ hash-table?) (url : :string))
   (define bucket (hash-ref ctx 'bucket))
   (using (bucket : S3Bucket)
     (if (bucket.exists? url)
-      (begin
-        (set-adjoin! (hash-ref ctx 'hit-cache) url)
-        (get-cache-address ctx url))
+      (set-adjoin! (hash-ref ctx 'hit-cache) url)
       (begin
         (eprintf "Downloading '~a'...\n" url)
         (let ((req (http-get url)))
           (when (<= 200 (request-status req) 299)
             (bucket.put! url (request-content req))
-            (set-adjoin! (hash-ref ctx 'hit-cache) url)
-            (get-cache-address ctx url)))))))
+            (set-adjoin! (hash-ref ctx 'hit-cache) url)))))))
 
 (def (date->cfl-string (date :~ date?))
   (date->string (current-date) "~d/~b/~Y:~H:~M:~S ~z"))
