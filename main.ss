@@ -130,20 +130,20 @@
     (finally (log-request req))))
 
 (def (handle-request (ctx :~ hash-table?) (req : http-request) (res :~ http-response?))
-  (log-request req)
-  (define url (origin-url req))
-  (cond
-    ((not url)
-     (http-response-write res 400 [] "A valid 'url' parameter was not provided"))
-    ((not (allowed-domain? ctx url))
-     (http-response-write res 400 [] "The 'url' parameter does not come from an allowed domain"))
-    ((set-contains? (hash-ref ctx 'hit-cache) url)
-     (redirect res (get-cache-address ctx url)))
-    (else
-     (try
-       (sync-blob! ctx url)
-       (redirect res (get-cache-address ctx url))
-       (catch _ (http-response-write res 400 [] "The blob at 'url' could not be synchronized"))))))
+  (with-request-log req
+    (define url (origin-url req))
+    (cond
+      ((not url)
+       (http-response-write res 400 [] "A valid 'url' parameter was not provided"))
+      ((not (allowed-domain? ctx url))
+       (http-response-write res 400 [] "The 'url' parameter does not come from an allowed domain"))
+      ((set-contains? (hash-ref ctx 'hit-cache) url)
+       (redirect res (get-cache-address ctx url)))
+      (else
+       (try
+         (sync-blob! ctx url)
+         (redirect res (get-cache-address ctx url))
+         (catch _ (http-response-write res 400 [] "The blob at 'url' could not be synchronized")))))))
 
 (def (get-cache-address (ctx :~ hash-table?) (origin-url : :string))
   (let-hash ctx
