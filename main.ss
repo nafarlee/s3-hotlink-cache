@@ -28,6 +28,9 @@
         (only-in :std/net/uri
                  uri-decode)
         (only-in :std/sugar
+                 try
+                 catch
+                 finally
                  let-hash
                  hash
                  when-let)
@@ -40,14 +43,16 @@
                  http-request-method
                  http-request-path
                  http-request-params
+                 http-request-proto
                  http-response-write)
         (only-in :std/pregexp
                  pregexp-match
                  pregexp-split)
         (only-in :std/format
                  format
-                 printf
                  eprintf)
+        (only-in :std/text/json
+                 write-json)
         (only-in :std/net/request
                  http-get
                  request-status
@@ -112,28 +117,36 @@
     (hash (bucket
            (let-hash opt
              (S3-get-bucket (S3Client endpoint:    .s3-endpoint
-                                       access-key: .access-key
-                                       secret-key: .secret-key-env
-                                       region:     .s3-bucket-region)
+                                      access-key: .access-key
+                                      secret-key: .secret-key-env
+                                      region:     .s3-bucket-region)
                             .s3-bucket)))
           (hit-cache
            (set (make-comparator string? string=? #f string-hash))))
     opt))
 
+(defrule (with-request-log req body ...)
+  (let ($now (current-date))
+    (try
+      body
+      ...
+      (finally (log-request req $now)))))
+
 (def (handle-request (ctx :~ hash-table?) (req : http-request) (res :~ http-response?))
-  (log-request req)
-  (define url (origin-url req))
-  (cond
-    ((not url)
-     (http-response-write res 400 [] "A valid 'url' parameter was not provided"))
-    ((not (allowed-domain? ctx url))
-     (http-response-write res 400 [] "The 'url' parameter does not come from an allowed domain"))
-    ((set-contains? (hash-ref ctx 'hit-cache) url)
-     (redirect res (get-cache-address ctx url)))
-    ((sync-blob ctx url)
-     => (cut redirect res <>))
-    (else
-     (http-response-write res 400 [] "The blob at 'url' could not be synchronized"))))
+  (with-request-log req
+    (define url (origin-url req))
+    (cond
+      ((not url)
+       (http-response-write res 400 [] "A valid 'url' parameter was not provided"))
+      ((not (allowed-domain? ctx url))
+       (http-response-write res 400 [] "The 'url' parameter does not come from an allowed domain"))
+      ((set-contains? (hash-ref ctx 'hit-cache) url)
+       (redirect res (get-cache-address ctx url)))
+      (else
+       (try
+         (sync-blob! ctx url)
+         (redirect res (get-cache-address ctx url))
+         (catch _ (http-response-write res 400 [] "The blob at 'url' could not be synchronized")))))))
 
 (def (get-cache-address (ctx :~ hash-table?) (origin-url : :string))
   (let-hash ctx
@@ -147,42 +160,28 @@
     `("Cache-Control" . ,(format "public, max-age=~d" (* 60 60 24 7)))]
    #f))
 
-(def (sync-blob (ctx :~ hash-table?) (url : :string))
+(def (sync-blob! (ctx :~ hash-table?) (url : :string))
   (define bucket (hash-ref ctx 'bucket))
   (using (bucket : S3Bucket)
     (if (bucket.exists? url)
-      (begin
-        (set-adjoin! (hash-ref ctx 'hit-cache) url)
-        (get-cache-address ctx url))
+      (set-adjoin! (hash-ref ctx 'hit-cache) url)
       (begin
         (eprintf "Downloading '~a'...\n" url)
         (let ((req (http-get url)))
           (when (<= 200 (request-status req) 299)
             (bucket.put! url (request-content req))
-            (set-adjoin! (hash-ref ctx 'hit-cache) url)
-            (get-cache-address ctx url)))))))
+            (set-adjoin! (hash-ref ctx 'hit-cache) url)))))))
 
-(def (date->cfl-string (date :~ date?))
-  (date->string (current-date) "~d/~b/~Y:~H:~M:~S ~z"))
-
-(def (http-request-line (req : http-request))
-  (let ((path (http-request-path req))
-        (params (http-request-params req)))
-    (if params
-      (format "~a?~a" path params)
-      path)))
-
-(def (log-request (req : http-request))
-  (printf "~a ~a ~a [~a] \"~a ~a ~a\" ~a ~a\n"
-          (ip4-address->string (car (http-request-client req)))
-          "-"
-          "-"
-          (date->cfl-string (current-date))
-          (http-request-method req)
-          (uri-decode (http-request-line req))
-          "HTTP/1.1"
-          "-"
-          "-"))
+(def (log-request (req : http-request) (date :~ date?))
+  (write-json
+   (hash (ip        (ip4-address->string (car (http-request-client req))))
+         (timestamp (date->string date "~4"))
+         (method    (http-request-method req))
+         (params    (uri-decode (http-request-params req)))
+         (path      (uri-decode (http-request-path req)))
+         (protocol  (http-request-proto req))))
+  (newline)
+  (flush-output-port))
 
 (def (params->plist (params : :string))
   (pregexp-split "[&=]" params))
