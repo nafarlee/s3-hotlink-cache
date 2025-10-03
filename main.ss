@@ -183,7 +183,8 @@
          (params    (uri-decode (http-request-params req)))
          (path      (uri-decode (http-request-path req)))
          (protocol  "HTTP/1.1")))
-  (newline))
+  (newline)
+  (flush-output-port))
 
 (def (params->plist (params : :string))
   (pregexp-split "[&=]" params))
