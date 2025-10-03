@@ -172,13 +172,10 @@
             (bucket.put! url (request-content req))
             (set-adjoin! (hash-ref ctx 'hit-cache) url)))))))
 
-(def (date->cfl-string (date :~ date?))
-  (date->string date "~d/~b/~Y:~H:~M:~S ~z"))
-
 (def (log-request (req : http-request) (date :~ date?))
   (write-json
    (hash (ip        (ip4-address->string (car (http-request-client req))))
-         (timestamp (date->cfl-string date))
+         (timestamp (date->string date "~4"))
          (method    (http-request-method req))
          (params    (uri-decode (http-request-params req)))
          (path      (uri-decode (http-request-path req)))
