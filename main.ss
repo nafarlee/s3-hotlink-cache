@@ -43,6 +43,7 @@
                  http-request-method
                  http-request-path
                  http-request-params
+                 http-request-proto
                  http-response-write)
         (only-in :std/pregexp
                  pregexp-match
@@ -179,7 +180,7 @@
          (method    (http-request-method req))
          (params    (uri-decode (http-request-params req)))
          (path      (uri-decode (http-request-path req)))
-         (protocol  "HTTP/1.1")))
+         (protocol  (http-request-proto req))))
   (newline)
   (flush-output-port))
 
