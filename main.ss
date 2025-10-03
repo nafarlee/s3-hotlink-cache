@@ -50,7 +50,6 @@
                  pregexp-split)
         (only-in :std/format
                  format
-                 printf
                  eprintf)
         (only-in :std/text/json
                  write-json)
