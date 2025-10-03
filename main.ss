@@ -173,7 +173,7 @@
             (set-adjoin! (hash-ref ctx 'hit-cache) url)))))))
 
 (def (date->cfl-string (date :~ date?))
-  (date->string (current-date) "~d/~b/~Y:~H:~M:~S ~z"))
+  (date->string date "~d/~b/~Y:~H:~M:~S ~z"))
 
 (def (log-request (req : http-request) (date :~ date?))
   (write-json
